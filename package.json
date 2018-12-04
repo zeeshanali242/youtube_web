@@ -1,0 +1,24 @@
+{
+  "name": "canvas-streaming-example",
+  "version": "1.0.0",
+  "description": "",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js"
+  },
+  "author": "Brad Isbell <bradisbell@fb.com>",
+  "license": "SEE LICENSE IN LICENSE",
+  "dependencies": {
+    "axios": "^0.18.0",
+    "express": "^4.14.1",
+    "google-auth-library": "^2.0.1",
+    "googleapis": "^35.0.0",
+    "https": "^1.0.0",
+    "livecam": "^0.2.0",
+    "node-media-server": "^1.4.7",
+    "path": "^0.12.7",
+    "socket.io": "*",
+    "ws": "^2.1.0"
+  }
+}
