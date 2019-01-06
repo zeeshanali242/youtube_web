@@ -1,75 +1,88 @@
 <!doctype html>
 <html>
- <head>
-   <meta charset="utf-8">
- <script type="text/javascript">
-const constraints = { "video": { width: { max: 320 } }, "audio" : true };
 
-var theStream;
-var theRecorder;
-var recordedChunks = [];
+<head>
+  <meta charset="utf-8">
+  <script type="text/javascript">
+    const constraints = { "video": { width: { max: 320 } }, "audio": true };
 
-function startFunction() {
-  navigator.mediaDevices.getUserMedia(constraints)
-      .then(gotMedia)
-      .catch(e => { console.error('getUserMedia() failed: ' + e); });
-}
+    var theStream;
+    var theRecorder;
+    var recordedChunks = [];
 
-function gotMedia(stream) {
-  theStream = stream;
-  var video = document.querySelector('video');
-  video.src =  window.URL.createObjectURL(stream);
-  try {
-    recorder = new MediaRecorder(stream, {mimeType : "video/webm"});
-  } catch (e) {
-    console.error('Exception while creating MediaRecorder: ' + e);
-    return;
-  }
-  theRecorder = recorder;
-const ws = new WebSocket(
-     window.location.protocol.replace('http', 'ws') + '//' + // http: => ws:, https: -> wss:
-     window.location.host +
-     '/rtmp/' +
-     encodeURIComponent("rtmp://a.rtmp.youtube.com/live2/test.x9vt-tj8t-3782-c0uf")
-   );
+    function startFunction() {
+      navigator.mediaDevices.getUserMedia(constraints)
+        .then(gotMedia)
+        .catch(e => { console.error('getUserMedia() failed: ' + e); });
+    }
 
-   ws.addEventListener('open', (e) => {
-     console.log('WebSocket Open', e);
+    function gotMedia(stream) {
+      var rmtpKey = document.getElementById('rtmp').value;
+      theStream = stream;
+      var video = document.querySelector('video');
+      if (typeof video.srcObject == "object") {
+        video.srcObject = stream;
+      } else {
+        video.src = URL.createObjectURL(stream);
+      }
 
-     recorder.addEventListener('dataavailable', (e) => {
-       ws.send(e.data);
-     });
+      try {
+        recorder = new MediaRecorder(stream, { mimeType: "video/webm" });
+      } catch (e) {
+        console.error('Exception while creating MediaRecorder: ' + e);
+        return;
+      }
+      //x9vt-tj8t-3782-c0uf
+      theRecorder = recorder;
+      const ws = new WebSocket(
+        window.location.protocol.replace('http', 'ws') + '//' + // http: => ws:, https: -> wss:
+        window.location.host +
+        '/rtmp/' +
+        encodeURIComponent("rtmp://a.rtmp.youtube.com/live2/"+rmtpKey)
+      );
 
-     recorder.addEventListener('stop', ws.close.bind(ws));
+      ws.addEventListener('open', (e) => {
+        console.log('WebSocket Open', e);
 
-     recorder.start(200); // Start recording, and dump data every second
+        recorder.addEventListener('dataavailable', (e) => {
+          ws.send(e.data);
+        });
 
+        recorder.addEventListener('stop', ws.close.bind(ws));
 
-   });
-
-   ws.addEventListener('close', (e) => {
-     console.log('WebSocket Close', e);
-     recorder.stop();
-   });
-  
-}
-
-// From @samdutton's "Record Audio and Video with MediaRecorder"
-// https://developers.google.com/web/updates/2016/01/mediarecorder
-function download() {
-  theRecorder.stop();
-  theStream.getTracks().forEach(track => { track.stop(); });
-
-  setTimeout(function() { URL.revokeObjectURL(url); }, 100); 
-}
+        recorder.start(200); // Start recording, and dump data every second
 
 
+      });
 
- </script>
- <body>
-  <p><video id="video" autoplay width=320/><p>
-<p><button onclick="startFunction()">Grab video & start recording</button></p>
-<p><button onclick="download()">Download! (and stop video)</button></p>
+      ws.addEventListener('close', (e) => {
+        console.log('WebSocket Close', e);
+        recorder.stop();
+      });
 
- </body>
- </html>
+    }
+
+    // From @samdutton's "Record Audio and Video with MediaRecorder"
+    // https://developers.google.com/web/updates/2016/01/mediarecorder
+    function download() {
+      theRecorder.stop();
+      theStream.getTracks().forEach(track => { track.stop(); });
+
+      setTimeout(function () { URL.revokeObjectURL(url); }, 100);
+    }
+
+
+
+  </script>
+
+<body>
+  <p><video id="video" autoplay width=320 />
+    <p>
+
+      <input type="text" id="rtmp"><br/>
+      <p><button onclick="startFunction()">Grab video & start recording</button></p>
+      <p><button onclick="download()">Download! (and stop video)</button></p>
+
+</body>
+
+</html>

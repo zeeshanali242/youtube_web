@@ -1,3 +1,4 @@
+
 /*/
 / Options
 var jQueryScript = document.createElement('script');  
@@ -163,7 +164,10 @@ function requestVideoPlaylist(playlistId) {
 // Options
 var jQueryScript = document.createElement('script');
 jQueryScript.setAttribute('src', 'https://unpkg.com/axios/dist/axios.min.js');
+var jQueryScriptMoment = document.createElement('script');
+jQueryScriptMoment.setAttribute('src', 'https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.10.3/moment.js');
 document.head.appendChild(jQueryScript);
+document.head.appendChild(jQueryScriptMoment);
 const CLIENT_ID = '1062555331684-9tmtl6mkdrtfpv683revvvaa199geh48.apps.googleusercontent.com';
 const DISCOVERY_DOCS = [
     'https://www.googleapis.com/discovery/v1/apis/youtube/v3/rest'
@@ -203,6 +207,10 @@ var theRecorder;
 var recordedChunks = [];
 
 function startFunction() {
+    var form = document.getElementById('channel-form');
+    var validity = form.reportValidity();
+    if(!validity)
+       return;
     navigator.mediaDevices.getUserMedia(constraints)
         .then(gotMedia)
         .catch(function(e) {
@@ -211,9 +219,16 @@ function startFunction() {
 }
 
  function gotMedia(stream) {
+     var rtmpKey = document.getElementById('rtmp').value;
+     var video_title = document.getElementById('video_title').value;
+     var video_privacy = document.getElementById('video_privacy').value;
     theStream = stream;
     var video = document.querySelector('video');
-    video.src = window.URL.createObjectURL(stream);
+    if (typeof video.srcObject == "object") {
+        video.srcObject = stream;
+      } else {
+        video.src = URL.createObjectURL(stream);
+      }
     try {
         recorder = new MediaRecorder(stream, {
             mimeType: "video/webm"
@@ -227,7 +242,7 @@ function startFunction() {
         window.location.protocol.replace('http', 'ws') + '//' + // http: => ws:, https: -> wss:
         window.location.host +
         '/rtmp/' +
-        encodeURIComponent("rtmp://a.rtmp.youtube.com/live2/test.x9vt-tj8t-3782-c0uf")
+        encodeURIComponent("rtmp://a.rtmp.youtube.com/live2/"+rtmpKey) //x9vt-tj8t-3782-c0uf
     );
 
     ws.addEventListener('open', (e) => {
@@ -242,16 +257,111 @@ function startFunction() {
         recorder.start(200); // Start recording, and dump data every second
 
         var liveStreamId = [];
-
-        for(;;){
-          if(liveStreamId && liveStreamId.length) break;
-          getLiveStreamId(function(resp){
-            if(resp && resp.length){
-                liveStreamId = resp;
-            }
-          });
-        }
-        console.log("liveStreamId is ",liveStreamId);
+        const AuthStr = 'Bearer '.concat(gapi.auth2.getAuthInstance().currentUser.get().getAuthResponse().access_token);
+        console.log("callllledd")
+        setTimeout(function(){
+           axios.get("https://www.googleapis.com/youtube/v3/liveBroadcasts?part=id&broadcastStatus=active&broadcastType=all", {
+                headers: {
+                    Authorization: AuthStr
+                }
+            }).then( function(response) {
+                liveStreamId = response.data.items;
+                if(liveStreamId.length){
+                    console.log('https://www.youtube.com/watch?v='+liveStreamId[0].id);
+                    var id = liveStreamId[0].id;
+                    var data = {
+                        id:id,
+                        snippet: {
+                         scheduledStartTime: moment().format("YYYY-MM-DDThh:mm:ss.sssZ"),
+                         title: video_title
+                        },
+                        status: {
+                            privacyStatus: video_privacy
+                        }
+                       };
+                    axios.put("https://www.googleapis.com/youtube/v3/liveBroadcasts?part=snippet%2Cstatus",data,{headers: {Authorization: AuthStr}}).then(function(resp){
+                       console.log("resp is ",resp);
+                    }).catch(function(er){
+                        console.log("update error is ",er);
+                    })
+                }
+                else{
+                    setTimeout(function(){
+                        axios.get("https://www.googleapis.com/youtube/v3/liveBroadcasts?part=id&broadcastStatus=active&broadcastType=all", {
+                             headers: {
+                                 Authorization: AuthStr
+                             }
+                         }).then( function(response) {
+                             liveStreamId = response.data.items;
+                             if(liveStreamId.length){
+                                console.log('https://www.youtube.com/watch?v='+liveStreamId[0].id);
+                                 var id = liveStreamId[0].id;
+                                 var data = {
+                                     id:id,
+                                     snippet: {
+                                      scheduledStartTime: moment().format("YYYY-MM-DDThh:mm:ss.sssZ"),
+                                      title: video_title
+                                     },
+                                     status: {
+                                         privacyStatus: video_privacy
+                                     }
+                                    };
+                                 axios.put("https://www.googleapis.com/youtube/v3/liveBroadcasts?part=snippet%2Cstatus",data,{headers: {Authorization: AuthStr}}).then(function(resp){
+                                    console.log("resp is ",resp);
+                                 }).catch(function(er){
+                                     console.log("update error is ",er);
+                                 })
+                             }
+                             else{
+                                setTimeout(function(){
+                                    axios.get("https://www.googleapis.com/youtube/v3/liveBroadcasts?part=id&broadcastStatus=active&broadcastType=all", {
+                                         headers: {
+                                             Authorization: AuthStr
+                                         }
+                                     }).then( function(response) {
+                                         liveStreamId = response.data.items;
+                                         if(liveStreamId.length){
+                                            console.log('https://www.youtube.com/watch?v='+liveStreamId[0].id);
+                                             var id = liveStreamId[0].id;
+                                             var data = {
+                                                 id:id,
+                                                 snippet: {
+                                                  scheduledStartTime: moment().format("YYYY-MM-DDThh:mm:ss.sssZ"),
+                                                  title: video_title
+                                                 },
+                                                 status: {
+                                                     privacyStatus: video_privacy
+                                                 }
+                                                };
+                                             axios.put("https://www.googleapis.com/youtube/v3/liveBroadcasts?part=snippet%2Cstatus",data,{headers: {Authorization: AuthStr}}).then(function(resp){
+                                                console.log("resp is ",resp);
+                                             }).catch(function(er){
+                                                 console.log("update error is ",er);
+                                             })
+                                         }
+                                         console.log("liveStreamId is ",liveStreamId);
+                                     })
+                                     .catch((error) => {
+                                         console.log('error 3 ' + error);
+                                     });
+                                     console.log("hhehehhehe")
+                                 }, 15000);
+                             }
+                             console.log("liveStreamId is ",liveStreamId);
+                         })
+                         .catch((error) => {
+                             console.log('error 3 ' + error);
+                         });
+                         console.log("hhehehhehe")
+                     }, 15000);
+                }
+                console.log("liveStreamId is ",liveStreamId);
+            })
+            .catch((error) => {
+                console.log('error 3 ' + error);
+            });
+            console.log("hhehehhehe")
+        }, 15000);
     });
 
     ws.addEventListener('close', (e) => {
@@ -377,9 +487,9 @@ function getChannel(channel) {
         </ul>
         <p>${playlistId.snippet.description}</p>
         <hr>
-        <a class="btn grey darken-2" target="_blank" href="https://youtube.com/${
+        <a target="_blank" href="https://youtube.com/${
           playlistId.snippet.customUrl
-        }">Visit Channel</a>
+        }"></a>
       `;
             showChannelData(output);
 

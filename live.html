@@ -13,6 +13,9 @@
     #signout-button {
       display: none
     }
+    .privacy{
+      display: block !important;
+    }
   </style>
 
   <title>YouTube Channel Data</title>
@@ -38,11 +41,21 @@
       <div id="content">
         <div class="row">
           <div class="col s6">
-            <form id="channel-form">
+            <form id="channel-form"> 
               <div class="input-field col s6">
-                <input type="text" placeholder="Enter the live stream title" id="channel-input">
-               
+                <input type="text" placeholder="Enter the live stream title" id="video_title" required>
               </div>
+              <div class="input-field col s6" >
+                 List <select id="video_privacy" class="privacy" required>
+                    <option value=''>Selete-Option</option>
+                    <option value="Private">Private</option>
+                    <option value="Unlisted">Unlisted</option>
+                    <option value="Public">Public</option>
+                  </select>
+                </div>
+                <div class="input-field col s6">
+                    <input type="text" placeholder="RTMP Key" id="rtmp" required>
+                </div>
             </form>
              <button onclick="startFunction()" class="btn grey">Go Live</button>
             <button onclick="download()" class="btn grey">Stop Stream</button>
@@ -56,7 +69,7 @@
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0-rc.2/js/materialize.min.js"></script>
   <script src="./js/main.js"></script>
-  <script async defer src="https://apis.google.com/js/api.js" onload="this.onload=function(){};handleClientLoad()" onreadystatechange="if (this.readyState === 'complete') this.onload()">
+  <script src="https://apis.google.com/js/api.js" onload="handleClientLoad()">
   </script>
 </body>
 

@@ -9,11 +9,18 @@
 const child_process = require('child_process');
 const express = require('express');
 const WebSocketServer = require('ws').Server;
-const http = require('http')
+const https = require('https')
 const fs = require('fs')
 var readline = require('readline');
 var {google} = require('googleapis');
 var path = require('path');
+const Rox = require("rox-node");
+const appSettingsContainer = {
+  isWebLive: new Rox.Flag(),
+};
+const passport = require('passport');
+var GoogleStrategy = require( 'passport-google-oauth2' ).Strategy;
+
 
 const app = express();
 const httpsOptions = {
@@ -22,11 +29,11 @@ const httpsOptions = {
 }
 
 app.use('/js', express.static(path.resolve(__dirname)));
-const server = http.createServer(app).listen(3000,() => {
+const server = https.createServer(httpsOptions,app).listen(4000,() => {
   console.log('Listening...');
 });
 
-app.get('/login', function (req, res) {
+app.get('/login', async function (req, res) {
    res.sendFile(path.join(__dirname+'/live.html'));
 })
 
@@ -150,41 +157,24 @@ wss.on('connection', (ws) => {
   console.log("match is ",match);
   const rtmpUrl = decodeURIComponent(match[1]);
   console.log('Target RTMP URL:', rtmpUrl);
-  
-  // Launch FFmpeg to handle all appropriate transcoding, muxing, and RTMP
-  const ffmpeg = child_process.spawn('ffmpeg', [
-    // Facebook requires an audio track, so we create a silent one here.
-    // Remove this line, as well as `-shortest`, if you send audio from the browser.
 
-    
-    // FFmpeg will read input video from STDIN
+
+  const ffmpeg = child_process.spawn('ffmpeg', [
     '-i', '-',
-    "-c:a","aac",
-    "-vf","scale=1280:-1",
-    "-framerate" , "ntsc",
-    // Because we're using a generated audio source which never ends,
-    // specify that we'll stop at end of other input.  Remove this line if you
-    // send audio from the browser.
-    '-shortest',
-    
-    // If we're encoding H.264 in-browser, we can set the video codec to 'copy'
-    // so that we don't waste any CPU and quality with unnecessary transcoding.
-    // If the browser doesn't support H.264, set the video codec to 'libx264'
-    // or similar to transcode it to H.264 here on the server.
+    '-r','23.976',
     '-c:v', 'libx264',
-    
-    // AAC audio is required for Facebook Live.  No browser currently supports
-    // encoding AAC, so we must transcode the audio to AAC here on the server.
+    "-framerate" , "23",
+    '-b:v','2500k',
+    '-b:a','128k',
+    '-s','1280x720',
+    "-c:a","aac",
     '-acodec', 'aac',
-    
-    // FLV is the container format used in conjunction with RTMP
     '-f', 'flv',
-    
-    // The output RTMP URL.
-    // For debugging, you could set this to a filename like 'test.flv', and play
-    // the resulting file with VLC.
     rtmpUrl 
   ]);
+//  ffmpeg -f alsa -ac 2 -i hw:0,0 -i /dev/video0 -f v4l2 -s 1280x720 -r 10   -vcodec libx264 -pix_fmt yuv420p -preset ultrafast -r 25 -g 20 -b:v 2500k -codec:a libmp3lame -ar 44100 -threads 6 -b:a 11025 -bufsize 512k -f flv rtmp://a.rtmp.youtube.com/live2/1w29-d4pk-m8r5-1f4x
+
+
 
 //ffmpeg -f lavfi -i anullsrc=r=16000:cl=mono  -f v4l2 -r 10 -i /dev/video0 -i :0.0 -f pulse -i default -c:v libx264 -pix_fmt yuv420p -preset ultrafast -g 20 -b:v 2500k  -c:a aac -ar 44100 -threads 0 -bufsize 512k -strict experimental -f flv rtmp://a.rtmp.youtube.com/live2/x9vt-tj8t-3782-c0uf
   
